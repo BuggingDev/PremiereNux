@@ -9,28 +9,7 @@ The GPU stack is the one of [NuxFX](https://github.com/BuggingDev/NuxFX).
 
 PremiereNux contains no Adobe software.
 
-> **Status** (Arch Linux, RTX 4060 Ti, GPU reached through Direct3D 12 and Mesa's dzn driver, Premiere rendering in
-> software): `install.sh` was run on a new Arch Linux system (15 steps, all checks pass) and **Premiere Pro 2026
-> (26.0)** was worked through on that install: new project, import of an H.264 MP4 and a PNG with thumbnails, a
-> two-clip timeline, Program monitor and real-time playback, effects (Invert, Black & White), an Ellipse Mask drawn in
-> the Program monitor and changed to an Opacity Mask, and an H.264/AAC export (checked with ffprobe and ffmpeg: size,
-> length, and the frames show the clips, the effect and the mask). **Object Mask** (the AI tool): one click on an
-> object makes the mask and *Track forward* follows the object through all 150 frames of a test clip (the exported
-> frames show the mask at 210, 670 and 1150 px of 1280 where the object is). **Sound** was measured, not listened to:
-> while Premiere played, a 440 Hz tone reached the sound server without a gap (see Notes). **Premiere Pro 2024
-> (24.4.1)** shows the Home screen and the New Project / Import workspace. The installer also ran (with an empty
-> stand-in for the Premiere folder) on Ubuntu 24.04, Debian 13, Fedora 44 and openSUSE Tumbleweed: all 15 steps and
-> checks pass.
-
 ## Screenshots
-
-The installer (`./install.sh --dry-run` shows the plan and changes nothing):
-
-![The installer's plan](docs/screenshots/01-installer-plan.png)
-
-The end of a second run, with everything already installed (finished parts are skipped):
-
-![The end of an installer run](docs/screenshots/02-installer-done.png)
 
 Premiere Pro 2026 after the install. Every image shows the Premiere window only.
 
@@ -60,6 +39,14 @@ A frame of the exported H.264 file (2.4 s, 1280x720) with the mask changed to an
 only the disc is left, in grey, in the middle of the frame.
 
 ![Frame of the exported MP4 with the Object Mask](docs/screenshots/09-object-mask-export.png)
+
+The installer (`./install.sh --dry-run` shows the plan and changes nothing):
+
+![The installer's plan](docs/screenshots/01-installer-plan.png)
+
+The end of a second run, with everything already installed (finished parts are skipped):
+
+![The end of an installer run](docs/screenshots/02-installer-done.png)
 
 The test machine (`fastfetch`):
 
