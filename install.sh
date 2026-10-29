@@ -285,12 +285,12 @@ noninteractive() {
 
 step "System packages"
 if [ "$PACKAGES" = 1 ]; then
-    BASE=(git curl tar xz zstd cabextract pkg-config awk procps which rsync vulkan-loader fontconfig pactl)
+    BASE=(git curl tar gzip xz zstd cabextract pkg-config awk procps which rsync vulkan-loader fontconfig pactl)
     WINE_LIBS=$(prnux_libs_missing "$PRNUX_WINE_SONAMES" | tr '\n' ' ')
     MESA_LIBS=""
     [ "$DZN" = 1 ] && MESA_LIBS=$(prnux_libs_missing "$PRNUX_MESA_SONAMES" | tr '\n' ' ')
     MISSING_ANY=0
-    for t in git curl tar xz zstd cabextract awk pgrep which rsync fc-list pactl; do have "$t" || MISSING_ANY=1; done
+    for t in git curl tar gzip xz zstd cabextract awk pgrep which rsync fc-list pactl; do have "$t" || MISSING_ANY=1; done
     prnux_have_lib libvulkan.so.1 || MISSING_ANY=1
     [ -n "$WINE_LIBS$MESA_LIBS" ] && MISSING_ANY=1
     # shellcheck disable=SC2206
