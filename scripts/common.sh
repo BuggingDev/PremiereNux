@@ -302,7 +302,8 @@ prnux_pkg_hint() {
         esac
         # Debian 13 and Ubuntu 24.04 renamed libraries for the 64-bit time_t (libasound2 is a virtual package there,
         # the library is in libasound2t64): take the name that exists
-        if [ "$family" = apt ] && command -v apt-cache > /dev/null 2>&1 && ! apt-cache show "$p" > /dev/null 2>&1 && apt-cache show "${p}t64" > /dev/null 2>&1; then
+        if [ "$family" = apt ] && command -v apt-cache > /dev/null 2>&1 \
+            && ! apt-cache show "$p" 2> /dev/null | grep -q '^Package:' && apt-cache show "${p}t64" 2> /dev/null | grep -q '^Package:'; then
             p=${p}t64
         fi
         case " $out " in *" $p "*) ;; *) out="$out $p" ;; esac
