@@ -1,0 +1,22 @@
+PremiereNux third-party notices
+
+NuxFX (https://github.com/BuggingDev/NuxFX), GPL-3.0-or-later, Copyright (C) 2026 NuxFX contributors:
+  install.sh and scripts/common.sh are derived from its install.sh and scripts/common.sh. The Mesa packages that
+  install.sh downloads are its release assets (Mesa 25.2.8 with the dzn patches of NuxFX, MIT license; DirectX-Headers
+  by Microsoft, MIT license).
+
+Wine (https://www.winehq.org), LGPL-2.1-or-later:
+  winrt-json/premierenux_json.c (and the DLL built from it) is derived from dlls/windows.web/json_object.c.
+  Copyright (C) 2024 Mohamad Al-Jaf, Copyright (C) 2026 Olivia Ryan (and the Wine project).
+  The source is in winrt-json/, build.sh rebuilds the DLL (LICENSE-LGPL-2.1.txt).
+
+Downloaded at install time (checked by SHA-256, not part of this repository):
+  Wine TkG staging builds by Kron4ek (https://github.com/Kron4ek/Wine-Builds), Wine: LGPL-2.1-or-later
+  DXVK (https://github.com/doitsujin/dxvk), zlib license
+  vkd3d-proton (https://github.com/HansKristian-Work/vkd3d-proton), LGPL-2.1-or-later
+  nvidia-libs (https://github.com/SveSop/nvidia-libs)
+  winetricks (https://github.com/Winetricks/winetricks), LGPL-2.1-or-later
+
+Copied from your Windows installation (not part of this repository):
+  Adobe Premiere Pro 2024, Adobe Desktop Common, Adobe fonts (Adobe Inc.)
+  Microsoft Edge WebView2 runtime, msxml3 (Microsoft)

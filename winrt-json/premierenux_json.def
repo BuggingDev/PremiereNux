@@ -1,0 +1,4 @@
+LIBRARY premierenux_json.dll
+EXPORTS
+    DllGetActivationFactory
+    DllCanUnloadNow

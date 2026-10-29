@@ -1,0 +1,5 @@
+# build output (the shipped shim is the one exception)
+*.dll
+!winrt-json/premierenux_json.dll
+*.exe
+*.o
