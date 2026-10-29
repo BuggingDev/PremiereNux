@@ -24,7 +24,19 @@ if [ -f "$WINEPREFIX/system.reg" ]; then ok "prefix: $WINEPREFIX"; else warn "no
 
 sec "Premiere Pro"
 if [ -f "$PP_DIR/Adobe Premiere Pro.exe" ]; then
-    ok "$PP_DIR (version $(sed -n 's/.*<Data key="ProductVersion">\([0-9][0-9.]*\).*/\1/p' "$PP_DIR/AMT/application.xml" 2> /dev/null | head -n 1))"
+    PPV=$(sed -n 's/.*<Data key="ProductVersion">\([0-9][0-9.]*\).*/\1/p' "$PP_DIR/AMT/application.xml" 2> /dev/null | head -n 1)
+    ok "$PP_DIR (version $PPV)"
+    # the Object Mask tool (Premiere Pro 25 and newer) loads its models from a folder of the Windows installation
+    case "${PPV%%.*}" in
+        ''|*[!0-9]*) ;;
+        *) if [ "${PPV%%.*}" -ge 25 ]; then
+               if compgen -G "$WINEPREFIX/drive_c/Program Files/Common Files/Adobe/Premiere Pro/$(printf '%s' "$PPV" | cut -d. -f1,2)/*/ObjectMask" > /dev/null; then
+                   ok "Object Mask models are in the prefix"
+               else
+                   warn "Object Mask models are missing: the tool does nothing (run install.sh with --windows DIR)"
+               fi
+           fi ;;
+    esac
 else
     warn "Adobe Premiere Pro.exe not found in $PP_DIR"
 fi

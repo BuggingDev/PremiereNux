@@ -62,11 +62,11 @@ NVLIBS_SHA=01e8bb6368d088e22d8e8f1d02497214e8db436476021725ef0c0707b7cb1738
 WT_URL="https://raw.githubusercontent.com/Winetricks/winetricks/20250102/src/winetricks"
 WT_SHA=53194dead910f8a5eb1deacaa4773d4e48f5873633d18ab1ecd6fdb0cb92243b
 # Mesa 25.2.8 with the dzn patches of NuxFX (Vulkan on Direct3D 12) and its OpenGL driver, built by NuxFX's release workflow
-MESA_BASE="https://github.com/BuggingDev/NuxFX/releases/download/mesa-25.2.8-s4fc6e968"
-DZN_ASSET=nuxfx-mesa-dzn-25.2.8-s4fc6e9682830-x86_64.tar.zst
-DZN_SHA=2d30ce56b7d2f9a70f58567ad47b6a726a9041925ec90c7c4646155a8bcd1019
-GL_ASSET=nuxfx-mesa-gl-25.2.8-s4fc6e9682830-x86_64.tar.zst
-GL_SHA=b333ce5baf3d3c0174cf5e42b37b74452c66a06e3121d4a4a94fe78166927854
+MESA_BASE="https://github.com/BuggingDev/NuxFX/releases/download/mesa-25.2.8-sc92933ff"
+DZN_ASSET=nuxfx-mesa-dzn-25.2.8-sc92933ff732a-x86_64.tar.zst
+DZN_SHA=31567cc2de0e440140fdac8dcda0f1743c3090df99321a31199abdeb9be1da62
+GL_ASSET=nuxfx-mesa-gl-25.2.8-sc92933ff732a-x86_64.tar.zst
+GL_SHA=3f77277a007cedbb9403a1980d745f2b413486ddf7c48003dfd3dedc85be6b32
 # winrt-json/premierenux_json.dll as built from winrt-json/premierenux_json.c (build.sh prints the hash)
 SHIM_SHA=9beafdb145d4ff27de9624cef9dccf98fddc8a164f451a9c88ae7114723c84af
 
@@ -103,9 +103,8 @@ FAMILY=$(prnux_family)
 T0=$(date +%s)
 head1 "PremiereNux $PRNUX_VERSION: Adobe Premiere Pro on Linux (Wine, DXVK, vkd3d-proton)"
 say "  Host:    $( . /etc/os-release 2> /dev/null; echo "${PRETTY_NAME:-Linux}" ) (packages: $FAMILY)"
-say "  GPU:     $([ "$DZN" = 1 ] && echo "reached through Direct3D 12 (/dev/dxg): Vulkan through dzn, OpenGL through Mesa's D3D12 driver" || echo "the host's own Vulkan driver (not verified here)")"
+say "  GPU:     $([ "$DZN" = 1 ] && echo "reached through Direct3D 12 (/dev/dxg): Vulkan through dzn, OpenGL through Mesa's D3D12 driver" || echo "the host's own Vulkan driver")"
 say "  Install: $PRNUX_HOME"
-[ "$FAMILY" = pacman ] || note "only Arch Linux was run; the package names of the other distributions are unchecked"
 
 # ---------- questions ----------
 
@@ -180,6 +179,22 @@ comp_state "Adobe Desktop Common x86 (inter-app messaging, IPC broker)" "$(c "$A
 if [ "$WEBVIEW" = 1 ]; then comp_state "Microsoft Edge WebView2 runtime ${WV_SRC:+$(basename "$WV_SRC")} (Home screen panels)" "$([ -n "$WV_SRC" ] && f "$WV_SRC/msedgewebview2.exe" || echo 0)" "$(f "$WV_DST/msedgewebview2.exe")"; fi
 comp_state "msxml3.dll and msxml3r.dll (Premiere's start needs the native ones)" "$([ "$(f "$MSXML_SRC/System32/msxml3.dll")$(f "$MSXML_SRC/System32/msxml3r.dll")" = 11 ] && echo 1 || echo 0)" "$(f "$PFX/windows/system32/msxml3r.dll")"
 [ "$WEBVIEW" = 1 ] || WV_SRC=""
+# The Object Mask tool (AI) of Premiere Pro 25 and newer loads its models from a folder of the Windows installation,
+# "Common Files/Adobe/Premiere Pro/<major.minor>/<module id>/ObjectMask" (380 MB); without it the tool does nothing.
+PP_MAJOR=$(printf '%s' "$PP_V" | cut -d. -f1)
+case "$PP_MAJOR" in ''|*[!0-9]*) PP_MAJOR=0 ;; esac
+ML_REL="Program Files/Common Files/Adobe/Premiere Pro/$(printf '%s' "$PP_V" | cut -d. -f1,2)"
+ML_DST="$PFX/$ML_REL"
+ML_SRC=""; ML_ID=""
+if [ "$PP_MAJOR" -ge 25 ] && [ -n "$WIN" ]; then
+    ML_SRC=$(ls -d "$WIN/$ML_REL"/*/ObjectMask 2> /dev/null | head -n 1)
+    [ -n "$ML_SRC" ] && ML_ID=$(basename "$(dirname "$ML_SRC")")
+fi
+if [ "$PP_MAJOR" -ge 25 ]; then
+    if [ -n "$ML_SRC" ]; then good "Object Mask models (the AI tool)"
+    elif compgen -G "$ML_DST/*/ObjectMask" > /dev/null; then good "Object Mask models (already in the prefix)"
+    else note "Object Mask models: \"$ML_REL/<id>/ObjectMask\" not found in the Windows files; the tool will do nothing"; fi
+fi
 
 # ---------- GPU facts ----------
 
@@ -207,6 +222,7 @@ say "  dzn + OpenGL      $([ "$DZN" = 1 ] && echo "Mesa 25.2.8 prebuilt packages
 say "  DXVK / vkd3d      3.0.1 / 3.0.1"
 say "  CUDA bridge       $([ "$CUDA" = 1 ] && echo "nvidia-libs 1.0.2" || echo "off (Premiere renders in software; --cuda to try the GPU renderer)")"
 say "  WinRT JSON shim   winrt-json/ (Premiere needs IMap<HSTRING, IJsonValue> on JsonObject)"
+[ "$PP_MAJOR" -ge 25 ] && say "  Object Mask       $([ -n "$ML_SRC" ] && echo "models from $ML_SRC ($(du -sh "$ML_SRC" 2> /dev/null | cut -f1))" || echo "models not found in the Windows files")"
 [ "$DRY" = 1 ] && { say; say "dry run: nothing changed"; exit 0; }
 # the wineserver of a running Premiere would keep "waiting for the wineserver" below from ever finishing
 if [ -n "$(prnux_prefix_pids 'Adobe Premiere Pro[.]exe' | head -n 1)" ]; then
@@ -219,7 +235,7 @@ ask_yn "Start the installation?" y || { say "cancelled"; exit 1; }
 mkdir -p "$PRNUX_HOME/downloads" "$PRNUX_LOG_DIR"
 LOG="$PRNUX_LOG_DIR/install_$(date +%Y%m%d_%H%M%S).log"
 say "  log: $LOG"
-STEP=0; TOTAL=14
+STEP=0; TOTAL=15
 step() { STEP=$((STEP + 1)); head1 "[$STEP/$TOTAL] $*"; }
 
 # run DESCRIPTION CMD...: output goes to the log; on failure the tail is shown (stdin is closed, the log is capped)
@@ -353,19 +369,34 @@ install_mesa() {
     done
     rm -rf "$prefix"
     mv "$stage" "$prefix"
+    printf '%s\n' "$sha" > "$prefix/.asset-sha256"
     [ "$comp" = dzn ] && prnux_write_dzn_icd
     return 0
+}
+# a package of another build than the pinned one (an older release) is replaced
+mesa_current() { # PREFIX SHA
+    [ "$(cat "$1/.asset-sha256" 2> /dev/null)" = "$2" ]
 }
 
 step "Vulkan driver (dzn)"
 if [ "$DZN" = 1 ]; then
-    if [ -f "$(prnux_dzn_icd)" ] && [ -f "$DZN_PREFIX/lib/libvulkan_dzn.so" ] && [ "$FORCE" = 0 ]; then good "found: $(prnux_dzn_icd)"; else install_mesa dzn; good "installed: $(prnux_dzn_icd)"; fi
+    if [ -f "$(prnux_dzn_icd)" ] && [ -f "$DZN_PREFIX/lib/libvulkan_dzn.so" ] && mesa_current "$DZN_PREFIX" "$DZN_SHA" && [ "$FORCE" = 0 ]; then
+        good "found: $(prnux_dzn_icd)"
+    else
+        [ -f "$DZN_PREFIX/lib/libvulkan_dzn.so" ] && note "the installed dzn is not the pinned build; replacing it"
+        install_mesa dzn; good "installed: $(prnux_dzn_icd)"
+    fi
 else
     good "not needed: the host's own Vulkan driver is used"
 fi
 step "OpenGL driver (Mesa EGL and d3d12)"
 if [ "$DZN" = 1 ]; then
-    if [ -f "$PRNUX_GL_PREFIX/lib/libEGL.so.1" ] && [ "$FORCE" = 0 ]; then good "found: $PRNUX_GL_PREFIX"; else install_mesa gl; good "installed: $PRNUX_GL_PREFIX"; fi
+    if [ -f "$PRNUX_GL_PREFIX/lib/libEGL.so.1" ] && mesa_current "$PRNUX_GL_PREFIX" "$GL_SHA" && [ "$FORCE" = 0 ]; then
+        good "found: $PRNUX_GL_PREFIX"
+    else
+        [ -f "$PRNUX_GL_PREFIX/lib/libEGL.so.1" ] && note "the installed OpenGL driver is not the pinned build; replacing it"
+        install_mesa gl; good "installed: $PRNUX_GL_PREFIX"
+    fi
 else
     good "not needed: the host's own OpenGL driver is used"
 fi
@@ -476,6 +507,18 @@ comp_copy "Adobe Desktop Common (NGL)" "$ADC64_SRC" "$ADC64_DST"
 comp_copy "Adobe Desktop Common x86 (IPC broker)" "$ADC32_SRC" "$ADC32_DST"
 if [ "$WEBVIEW" = 1 ]; then comp_copy "Edge WebView2 runtime" "$WV_SRC" "$WV_DST"; fi
 
+step "Object Mask models"
+if [ "$PP_MAJOR" -lt 25 ]; then
+    good "not needed: Object Mask came with Premiere Pro 25"
+elif [ -n "$ML_SRC" ] && ! { [ -d "$ML_DST/$ML_ID/ObjectMask" ] && [ "$FORCE" = 0 ]; }; then
+    run "copying $(du -sh "$ML_SRC" 2> /dev/null | cut -f1) to the prefix" copy_tree "$ML_SRC" "$ML_DST/$ML_ID/ObjectMask"
+elif compgen -G "$ML_DST/*/ObjectMask" > /dev/null; then
+    good "found: $ML_DST"
+else
+    note "Object Mask needs the folder \"$ML_REL/<id>/ObjectMask\" of your Windows files and it was not found"
+    say "         run again with --windows DIR (DIR holds \"Program Files\"), or copy that folder to $ML_DST/<id>/"
+fi
+
 step "WinRT JsonObject shim"
 SHIM_FILE="$HERE/winrt-json/premierenux_json.dll"
 if [ "$BUILD_SHIM" = 0 ] && [ "$(sha256sum "$SHIM_FILE" 2> /dev/null | cut -c1-64)" = "$SHIM_SHA" ]; then
@@ -540,6 +583,7 @@ CHK_DESC="Wine runner starts"; chk "$WINE_BIN_DIR/wine" --version
 CHK_DESC="Adobe Premiere Pro.exe in the prefix"; chk test -f "$PP_DIR/Adobe Premiere Pro.exe"
 CHK_DESC="JSON shim in the prefix"; chk test -f "$SYS32/premierenux_json.dll"
 CHK_DESC="Adobe Desktop Common in the prefix"; chk test -d "$ADC64_DST/NGL"
+[ "$PP_MAJOR" -ge 25 ] && { CHK_DESC="Object Mask models in the prefix"; chk bash -c 'compgen -G "$1" > /dev/null' _ "$ML_DST/*/ObjectMask"; }
 CHK_DESC="fonts visible to Wine (fc-list)"; chk sh -c '[ "$(fc-list | wc -l)" -gt 100 ]'
 
 ELAPSED=$(( $(date +%s) - T0 ))
